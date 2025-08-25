@@ -2,7 +2,14 @@ from sqlalchemy import text
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
 from uuid import UUID, uuid4
-from datetime import datetime, UTC
+
+class Continent(SQLModel, table=True):
+    continent_id: Optional[int] = Field(default=None, primary_key=True)
+    continent_name: str = Field(nullable=False)
+    continent_code: str = Field(min_length=2, max_length=2, nullable=False)  # ISO 3166-1 alpha-2
+
+    countries: List["Country"] = Relationship(back_populates="continent")
+
 
 
 class Country(SQLModel, table=True):
@@ -13,14 +20,17 @@ class Country(SQLModel, table=True):
         unique=True,
         sa_column_kwargs={"server_default": text("gen_random_uuid()")}
     )
-    country_name: str = Field(nullable=False)
-    country_code: str = Field(min_length=2, max_length=2, nullable=False)  # ISO 3166-1 alpha-2
+    country_name: str = Field(nullable=False, index=True, unique=True)
+    continent_id: Optional[int] = Field(default=None, foreign_key="continent.continent_id")
+    country_code: str = Field(min_length=2, max_length=2, nullable=False, unique=True)  # ISO 3166-1 alpha-2
     currency: Optional[str] = Field(default=None)
     flag: Optional[str] = Field(default=None)
 
     regions: List["StateOrRegion"] = Relationship(back_populates="country")
     cities: List["City"] = Relationship(back_populates="country")
     provinces: List["Province"] = Relationship(back_populates="country")
+    continent: Optional[Continent] = Relationship(back_populates="countries")
+
 
 
 class StateOrRegion(SQLModel, table=True):
